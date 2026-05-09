@@ -6,6 +6,7 @@ import '../../data/repositories/auth_repository.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/transactions/add_transaction_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authStream = ref.watch(authStateProvider);
@@ -28,6 +29,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, _) => const SignupScreen()),
+      GoRoute(
+        path: '/add-transaction',
+        builder: (_, _) => const AddTransactionScreen(),
+      ),
     ],
   );
 });

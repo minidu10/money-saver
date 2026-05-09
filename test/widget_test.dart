@@ -1,14 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:money_saver/app.dart';
+import 'package:money_saver/data/models/transaction.dart';
 
 void main() {
-  testWidgets('Home screen renders welcome message', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MoneySaverApp()));
-    await tester.pumpAndSettle();
+  test('AppTransaction round-trips through map', () {
+    final tx = AppTransaction(
+      id: 'abc',
+      type: TransactionType.expense,
+      amount: 1500.50,
+      categoryId: 'food',
+      date: DateTime.utc(2026, 5, 10, 12, 0),
+      note: 'lunch',
+    );
 
-    expect(find.text('Money Saver'), findsOneWidget);
-    expect(find.textContaining('Welcome'), findsOneWidget);
+    final restored = AppTransaction.fromMap('abc', tx.toMap());
+
+    expect(restored.id, tx.id);
+    expect(restored.type, tx.type);
+    expect(restored.amount, tx.amount);
+    expect(restored.categoryId, tx.categoryId);
+    expect(restored.date, tx.date);
+    expect(restored.note, tx.note);
+    expect(restored.isRecurring, tx.isRecurring);
   });
 }

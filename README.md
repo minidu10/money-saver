@@ -27,7 +27,6 @@ Distributed as a downloadable APK from this repository — **not** published to 
 Prerequisites:
 - Flutter 3.41+ (`flutter --version`)
 - Android SDK / Android Studio
-- A Firebase project (free) with Android app registered to package `com.minidu.moneysaver.money_saver`
 
 Steps:
 ```bash
@@ -35,17 +34,17 @@ git clone https://github.com/minidu10/money-saver.git
 cd money-saver
 flutter pub get
 
-# Wire up Firebase config (one-time):
-dart pub global activate flutterfire_cli
-flutterfire configure
-
-# Run in debug:
+# Run in debug on a connected device or emulator:
 flutter run
 
 # Build release APK:
 flutter build apk --release
 # Output: build/app/outputs/flutter-apk/app-release.apk
 ```
+
+Firebase config (`lib/firebase_options.dart`, `android/app/google-services.json`)
+is checked in so the build works out of the box. The bundled API key is a
+public client identifier; data security is enforced by Firestore rules.
 
 ## Project structure
 

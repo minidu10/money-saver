@@ -44,12 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase config (each developer must run `flutterfire configure` locally)
-lib/firebase_options.dart
-**/google-services.json
-**/GoogleService-Info.plist
-.firebaserc
-firebase.json
+# Firebase config: client API keys are committed so CI can build a
+# working APK. Security comes from Firestore rules + Auth, not from
+# hiding the API key.
 
 # Android signing
 **/key.properties

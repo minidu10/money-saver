@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
+import '../../core/preferences.dart';
 import '../../data/default_categories.dart';
 import '../../data/models/transaction.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -15,22 +16,14 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).value;
     final txAsync = ref.watch(transactionsStreamProvider);
+    final currency = currencyFor(ref.watch(currencyProvider));
 
     final greeting = user?.displayName?.isNotEmpty == true
         ? 'Hi, ${user!.displayName}'
         : 'Hi 👋';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Money Saver'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Money Saver')),
       body: txAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -40,8 +33,11 @@ class HomeScreen extends ConsumerWidget {
                 textAlign: TextAlign.center),
           ),
         ),
-        data: (transactions) =>
-            _HomeBody(greeting: greeting, transactions: transactions),
+        data: (transactions) => _HomeBody(
+          greeting: greeting,
+          transactions: transactions,
+          currencySymbol: currency.symbol,
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-transaction'),
@@ -53,10 +49,15 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _HomeBody extends ConsumerWidget {
-  const _HomeBody({required this.greeting, required this.transactions});
+  const _HomeBody({
+    required this.greeting,
+    required this.transactions,
+    required this.currencySymbol,
+  });
 
   final String greeting;
   final List<AppTransaction> transactions;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,7 +78,12 @@ class _HomeBody extends ConsumerWidget {
       children: [
         Text(greeting, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
-        _BalanceCard(balance: balance, income: income, expense: expense),
+        _BalanceCard(
+          balance: balance,
+          income: income,
+          expense: expense,
+          currencySymbol: currencySymbol,
+        ),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -109,7 +115,7 @@ class _HomeBody extends ConsumerWidget {
         else
           ...transactions
               .take(20)
-              .map((t) => _TransactionTile(tx: t)),
+              .map((t) => _TransactionTile(tx: t, currencySymbol: currencySymbol)),
       ],
     );
   }
@@ -120,11 +126,13 @@ class _BalanceCard extends StatelessWidget {
     required this.balance,
     required this.income,
     required this.expense,
+    required this.currencySymbol,
   });
 
   final double balance;
   final double income;
   final double expense;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +154,7 @@ class _BalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              formatMoney(balance),
+              formatMoney(balance, symbol: currencySymbol),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: cs.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
@@ -161,6 +169,7 @@ class _BalanceCard extends StatelessWidget {
                     amount: income,
                     icon: Icons.arrow_upward,
                     color: Colors.green.shade700,
+                    currencySymbol: currencySymbol,
                   ),
                 ),
                 Expanded(
@@ -169,6 +178,7 @@ class _BalanceCard extends StatelessWidget {
                     amount: expense,
                     icon: Icons.arrow_downward,
                     color: Colors.red.shade700,
+                    currencySymbol: currencySymbol,
                   ),
                 ),
               ],
@@ -186,12 +196,14 @@ class _InOutLine extends StatelessWidget {
     required this.amount,
     required this.icon,
     required this.color,
+    required this.currencySymbol,
   });
 
   final String label;
   final double amount;
   final IconData icon;
   final Color color;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +216,7 @@ class _InOutLine extends StatelessWidget {
           children: [
             Text(label, style: Theme.of(context).textTheme.bodySmall),
             Text(
-              formatMoney(amount, decimals: 0),
+              formatMoney(amount, symbol: currencySymbol, decimals: 0),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -217,8 +229,9 @@ class _InOutLine extends StatelessWidget {
 }
 
 class _TransactionTile extends ConsumerWidget {
-  const _TransactionTile({required this.tx});
+  const _TransactionTile({required this.tx, required this.currencySymbol});
   final AppTransaction tx;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -264,7 +277,7 @@ class _TransactionTile extends ConsumerWidget {
               : formatDate(tx.date),
         ),
         trailing: Text(
-          '$sign${formatMoney(tx.amount)}',
+          '$sign${formatMoney(tx.amount, symbol: currencySymbol)}',
           style: TextStyle(color: amountColor, fontWeight: FontWeight.w600),
         ),
       ),

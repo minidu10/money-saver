@@ -47,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Version'),
-            subtitle: Text('0.2.0'),
+            subtitle: Text('0.2.1'),
           ),
           ListTile(
             leading: const Icon(Icons.code),
@@ -120,30 +120,32 @@ void _showCurrencyPicker(
     context: context,
     showDragHandle: true,
     builder: (ctx) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('Choose currency',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          ),
-          for (final c in supportedCurrencies)
-            RadioListTile<String>(
-              title: Text('${c.code} · ${c.name}'),
-              secondary: Text(c.symbol,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w600)),
-              value: c.code,
-              groupValue: currentCode,
-              onChanged: (v) async {
-                if (v != null) {
-                  await ref.read(currencyProvider.notifier).set(v);
-                }
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
+      child: RadioGroup<String>(
+        groupValue: currentCode,
+        onChanged: (v) async {
+          if (v != null) {
+            await ref.read(currencyProvider.notifier).set(v);
+          }
+          if (ctx.mounted) Navigator.pop(ctx);
+        },
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('Choose currency',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
-        ],
+            for (final c in supportedCurrencies)
+              RadioListTile<String>(
+                title: Text('${c.code} · ${c.name}'),
+                secondary: Text(c.symbol,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w600)),
+                value: c.code,
+              ),
+          ],
+        ),
       ),
     ),
   );
@@ -155,26 +157,28 @@ void _showThemePicker(
     context: context,
     showDragHandle: true,
     builder: (ctx) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final mode in ThemeMode.values)
-            RadioListTile<ThemeMode>(
-              title: Text(switch (mode) {
-                ThemeMode.light => 'Light',
-                ThemeMode.dark => 'Dark',
-                ThemeMode.system => 'Follow system',
-              }),
-              value: mode,
-              groupValue: current,
-              onChanged: (v) async {
-                if (v != null) {
-                  await ref.read(themeModeProvider.notifier).set(v);
-                }
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-            ),
-        ],
+      child: RadioGroup<ThemeMode>(
+        groupValue: current,
+        onChanged: (v) async {
+          if (v != null) {
+            await ref.read(themeModeProvider.notifier).set(v);
+          }
+          if (ctx.mounted) Navigator.pop(ctx);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final mode in ThemeMode.values)
+              RadioListTile<ThemeMode>(
+                title: Text(switch (mode) {
+                  ThemeMode.light => 'Light',
+                  ThemeMode.dark => 'Dark',
+                  ThemeMode.system => 'Follow system',
+                }),
+                value: mode,
+              ),
+          ],
+        ),
       ),
     ),
   );

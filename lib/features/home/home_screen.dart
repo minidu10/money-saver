@@ -5,17 +5,49 @@ import 'package:go_router/go_router.dart';
 import '../../core/format.dart';
 import '../../core/preferences.dart';
 import '../../data/default_categories.dart';
+import '../../data/models/budget.dart';
 import '../../data/models/transaction.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/budget_repository.dart';
+import '../../data/repositories/recurring_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _recurringProcessed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_recurringProcessed) return;
+      _recurringProcessed = true;
+      final repo = ref.read(recurringRepositoryProvider);
+      if (repo == null) return;
+      try {
+        final n = await repo.processDue();
+        if (n > 0 && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Added $n recurring transaction(s)')),
+          );
+        }
+      } catch (_) {
+        // Silently ignore — recurring sync isn't critical UX.
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).value;
     final txAsync = ref.watch(transactionsStreamProvider);
+    final budgetsAsync = ref.watch(budgetsStreamProvider);
     final currency = currencyFor(ref.watch(currencyProvider));
 
     final greeting = user?.displayName?.isNotEmpty == true
@@ -23,7 +55,21 @@ class HomeScreen extends ConsumerWidget {
         : 'Hi 👋';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Money Saver')),
+      appBar: AppBar(
+        title: const Text('Money Saver'),
+        actions: [
+          IconButton(
+            tooltip: 'Recurring',
+            icon: const Icon(Icons.repeat),
+            onPressed: () => context.push('/recurring'),
+          ),
+          IconButton(
+            tooltip: 'Budgets',
+            icon: const Icon(Icons.pie_chart_outline),
+            onPressed: () => context.push('/budgets'),
+          ),
+        ],
+      ),
       body: txAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -36,6 +82,7 @@ class HomeScreen extends ConsumerWidget {
         data: (transactions) => _HomeBody(
           greeting: greeting,
           transactions: transactions,
+          budgets: budgetsAsync.value ?? const [],
           currencySymbol: currency.symbol,
         ),
       ),
@@ -52,11 +99,13 @@ class _HomeBody extends ConsumerWidget {
   const _HomeBody({
     required this.greeting,
     required this.transactions,
+    required this.budgets,
     required this.currencySymbol,
   });
 
   final String greeting;
   final List<AppTransaction> transactions;
+  final List<Budget> budgets;
   final String currencySymbol;
 
   @override
@@ -73,6 +122,8 @@ class _HomeBody extends ConsumerWidget {
         .fold(0.0, (a, t) => a + t.amount);
     final balance = income - expense;
 
+    final overBudgets = _overBudgets(monthTx, budgets, now);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -84,17 +135,26 @@ class _HomeBody extends ConsumerWidget {
           expense: expense,
           currencySymbol: currencySymbol,
         ),
+        if (overBudgets.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _OverBudgetBanner(
+            categoryNames: overBudgets,
+            onTap: () => context.push('/budgets'),
+          ),
+        ],
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Recent transactions',
                 style: Theme.of(context).textTheme.titleMedium),
-            if (transactions.length > 20)
-              const Text('Showing 20', style: TextStyle(color: Colors.grey)),
+            TextButton(
+              onPressed: () => context.push('/transactions'),
+              child: const Text('See all'),
+            ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         if (transactions.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 48),
@@ -114,9 +174,60 @@ class _HomeBody extends ConsumerWidget {
           )
         else
           ...transactions
-              .take(20)
+              .take(10)
               .map((t) => _TransactionTile(tx: t, currencySymbol: currencySymbol)),
       ],
+    );
+  }
+
+  List<String> _overBudgets(
+      List<AppTransaction> monthTx, List<Budget> budgets, DateTime now) {
+    final current =
+        budgets.where((b) => b.year == now.year && b.month == now.month);
+    final result = <String>[];
+    for (final b in current) {
+      final spent = monthTx
+          .where((t) =>
+              t.type == TransactionType.expense && t.categoryId == b.categoryId)
+          .fold(0.0, (a, t) => a + t.amount);
+      if (spent > b.limit) result.add(categoryById(b.categoryId).name);
+    }
+    return result;
+  }
+}
+
+class _OverBudgetBanner extends StatelessWidget {
+  const _OverBudgetBanner({required this.categoryNames, required this.onTap});
+  final List<String> categoryNames;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Colors.red.shade50,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.red.shade700),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Over budget: ${categoryNames.join(", ")}',
+                  style: TextStyle(
+                      color: Colors.red.shade900,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.red.shade700),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -266,6 +377,7 @@ class _TransactionTile extends ConsumerWidget {
         );
       },
       child: ListTile(
+        onTap: () => context.push('/edit-transaction/${tx.id}'),
         leading: CircleAvatar(
           backgroundColor: cat.color.withValues(alpha: 0.2),
           child: Icon(cat.icon, color: cat.color),

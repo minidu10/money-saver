@@ -8,22 +8,22 @@ const List<AppCategory> defaultCategories = [
   AppCategory(
     id: 'salary',
     name: 'Salary',
-    colorValue: 0xFF2E7D5B,
-    iconCodePoint: 0xe227, // attach_money
+    color: Color(0xFF2E7D5B),
+    icon: Icons.attach_money,
     type: TransactionType.income,
   ),
   AppCategory(
     id: 'gift',
     name: 'Gift',
-    colorValue: 0xFFD81B60,
-    iconCodePoint: 0xe8f6, // card_giftcard
+    color: Color(0xFFD81B60),
+    icon: Icons.card_giftcard,
     type: TransactionType.income,
   ),
   AppCategory(
     id: 'other_income',
     name: 'Other income',
-    colorValue: 0xFF6D4C41,
-    iconCodePoint: 0xe1db, // payments
+    color: Color(0xFF6D4C41),
+    icon: Icons.payments,
     type: TransactionType.income,
   ),
 
@@ -31,76 +31,72 @@ const List<AppCategory> defaultCategories = [
   AppCategory(
     id: 'food',
     name: 'Food',
-    colorValue: 0xFFFF7043,
-    iconCodePoint: 0xe25a, // restaurant
+    color: Color(0xFFFF7043),
+    icon: Icons.restaurant,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'transport',
     name: 'Transport',
-    colorValue: 0xFF1E88E5,
-    iconCodePoint: 0xe1d5, // directions_bus
+    color: Color(0xFF1E88E5),
+    icon: Icons.directions_bus,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'shopping',
     name: 'Shopping',
-    colorValue: 0xFFAB47BC,
-    iconCodePoint: 0xe8cc, // shopping_bag
+    color: Color(0xFFAB47BC),
+    icon: Icons.shopping_bag,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'bills',
     name: 'Bills',
-    colorValue: 0xFFEF5350,
-    iconCodePoint: 0xe9f4, // receipt_long
+    color: Color(0xFFEF5350),
+    icon: Icons.receipt_long,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'health',
     name: 'Health',
-    colorValue: 0xFF26A69A,
-    iconCodePoint: 0xe305, // local_hospital
+    color: Color(0xFF26A69A),
+    icon: Icons.local_hospital,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'entertainment',
     name: 'Entertainment',
-    colorValue: 0xFF7E57C2,
-    iconCodePoint: 0xe02c, // movie
+    color: Color(0xFF7E57C2),
+    icon: Icons.movie,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'education',
     name: 'Education',
-    colorValue: 0xFF42A5F5,
-    iconCodePoint: 0xe80c, // school
+    color: Color(0xFF42A5F5),
+    icon: Icons.school,
     type: TransactionType.expense,
   ),
   AppCategory(
     id: 'other_expense',
     name: 'Other',
-    colorValue: 0xFF78909C,
-    iconCodePoint: 0xe148, // category
+    color: Color(0xFF78909C),
+    icon: Icons.category,
     type: TransactionType.expense,
   ),
 ];
 
+const AppCategory _unknownCategory = AppCategory(
+  id: 'unknown',
+  name: 'Unknown',
+  color: Color(0xFF9E9E9E),
+  icon: Icons.category,
+  type: TransactionType.expense,
+);
+
 AppCategory categoryById(String id) {
   return defaultCategories.firstWhere(
     (c) => c.id == id,
-    orElse: () => const AppCategory(
-      id: 'unknown',
-      name: 'Unknown',
-      colorValue: 0xFF9E9E9E,
-      iconCodePoint: 0xe148,
-      type: TransactionType.expense,
-    ),
+    orElse: () => _unknownCategory,
   );
-}
-
-extension AppCategoryX on AppCategory {
-  Color get color => Color(colorValue);
-  IconData get icon =>
-      IconData(iconCodePoint, fontFamily: 'MaterialIcons');
 }

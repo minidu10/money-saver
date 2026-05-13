@@ -33,6 +33,7 @@ final sharedPreferencesProvider = Provider<SharedPreferences>(
 
 const String _kCurrency = 'currency';
 const String _kThemeMode = 'theme_mode';
+const String _kOnboardingSeen = 'onboarding_seen';
 
 class CurrencyNotifier extends Notifier<String> {
   @override
@@ -67,3 +68,17 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
 final themeModeProvider =
     NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+
+class OnboardingNotifier extends Notifier<bool> {
+  @override
+  bool build() =>
+      ref.read(sharedPreferencesProvider).getBool(_kOnboardingSeen) ?? false;
+
+  Future<void> markSeen() async {
+    await ref.read(sharedPreferencesProvider).setBool(_kOnboardingSeen, true);
+    state = true;
+  }
+}
+
+final onboardingSeenProvider =
+    NotifierProvider<OnboardingNotifier, bool>(OnboardingNotifier.new);

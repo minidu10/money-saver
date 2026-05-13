@@ -9,12 +9,14 @@ import '../../features/budgets/budgets_screen.dart';
 import '../../features/goals/add_goal_screen.dart';
 import '../../features/goals/goals_list_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/recurring/recurring_screen.dart';
 import '../../features/reports/reports_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/transactions/add_transaction_screen.dart';
 import '../../features/transactions/edit_transaction_screen.dart';
 import '../../features/transactions/transactions_list_screen.dart';
+import '../preferences.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authStream = ref.watch(authStateProvider);
@@ -26,7 +28,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final user = authStream.value;
       final loggingIn = state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup';
+      final onboarding = state.matchedLocation == '/onboarding';
+      final seenOnboarding = ref.read(onboardingSeenProvider);
 
+      if (!seenOnboarding) {
+        return onboarding ? null : '/onboarding';
+      }
+      if (onboarding) {
+        return user == null ? '/login' : '/';
+      }
       if (user == null) {
         return loggingIn ? null : '/login';
       }
@@ -34,6 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, _) => const SignupScreen()),
       GoRoute(

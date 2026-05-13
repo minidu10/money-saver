@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/csv_export.dart';
+import '../../core/notifications.dart';
 import '../../core/preferences.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/transaction_repository.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -13,6 +16,8 @@ class SettingsScreen extends ConsumerWidget {
     final currencyCode = ref.watch(currencyProvider);
     final themeMode = ref.watch(themeModeProvider);
     final currency = currencyFor(currencyCode);
+    final reminder = ref.watch(reminderProvider);
+    final txAsync = ref.watch(transactionsStreamProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -43,11 +48,77 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _showThemePicker(context, ref, themeMode),
           ),
           const Divider(height: 1),
+          const _SectionHeader('Reminders'),
+          SwitchListTile(
+            secondary: const Icon(Icons.notifications_outlined),
+            title: const Text('Daily reminder'),
+            subtitle: Text(
+              reminder.enabled
+                  ? 'Notify me at ${reminder.formattedTime} to log expenses'
+                  : 'Off',
+            ),
+            value: reminder.enabled,
+            onChanged: (v) async {
+              await ref.read(reminderProvider.notifier).setEnabled(v);
+              if (!context.mounted) return;
+              if (v && !ref.read(reminderProvider).enabled) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Notifications permission was denied'),
+                  ),
+                );
+              }
+            },
+          ),
+          if (reminder.enabled)
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('Reminder time'),
+              subtitle: Text(reminder.formattedTime),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime:
+                      TimeOfDay(hour: reminder.hour, minute: reminder.minute),
+                );
+                if (picked != null) {
+                  await ref
+                      .read(reminderProvider.notifier)
+                      .setTime(picked.hour, picked.minute);
+                }
+              },
+            ),
+          const Divider(height: 1),
+          const _SectionHeader('Data'),
+          ListTile(
+            leading: const Icon(Icons.file_download_outlined),
+            title: const Text('Export transactions as CSV'),
+            subtitle: Text(
+              txAsync.value == null
+                  ? 'Loading…'
+                  : '${txAsync.value!.length} transaction(s) ready to share',
+            ),
+            enabled: (txAsync.value?.isNotEmpty ?? false),
+            onTap: () async {
+              final txs = txAsync.value ?? const [];
+              if (txs.isEmpty) return;
+              try {
+                await exportTransactionsAsCsv(txs);
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Export failed: $e')),
+                );
+              }
+            },
+          ),
+          const Divider(height: 1),
           const _SectionHeader('About'),
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Version'),
-            subtitle: Text('0.3.0'),
+            subtitle: Text('0.4.0'),
           ),
           ListTile(
             leading: const Icon(Icons.code),

@@ -118,7 +118,7 @@ class SettingsScreen extends ConsumerWidget {
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Version'),
-            subtitle: Text('0.4.0'),
+            subtitle: Text('0.5.0'),
           ),
           ListTile(
             leading: const Icon(Icons.code),

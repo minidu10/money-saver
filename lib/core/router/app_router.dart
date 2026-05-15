@@ -16,6 +16,7 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/transactions/add_transaction_screen.dart';
 import '../../features/transactions/edit_transaction_screen.dart';
 import '../../features/transactions/transactions_list_screen.dart';
+import '../connectivity.dart';
 import '../preferences.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -85,14 +86,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _MainShell extends StatelessWidget {
+class _MainShell extends ConsumerWidget {
   const _MainShell({required this.shell});
   final StatefulNavigationShell shell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final online = ref.watch(connectivityProvider).value ?? true;
     return Scaffold(
-      body: shell,
+      body: Column(
+        children: [
+          if (!online) const _OfflineBanner(),
+          Expanded(child: shell),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: shell.currentIndex,
         onDestinationSelected: (i) => shell.goBranch(
@@ -121,6 +128,36 @@ class _MainShell extends StatelessWidget {
             label: 'Settings',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.errorContainer,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "You're offline. Changes will sync when you reconnect.",
+                  style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

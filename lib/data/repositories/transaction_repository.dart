@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../local_cache.dart';
 import '../models/transaction.dart';
 import 'auth_repository.dart';
 
@@ -17,11 +18,28 @@ final transactionRepositoryProvider = Provider<TransactionRepository?>((ref) {
   );
 });
 
+/// Reads from the Hive cache first (instant cold start), then merges with the
+/// Firestore live stream. Each Firestore emission is also written back to Hive
+/// so the next cold start renders the latest known data immediately.
 final transactionsStreamProvider =
-    StreamProvider<List<AppTransaction>>((ref) {
+    StreamProvider<List<AppTransaction>>((ref) async* {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    yield const [];
+    return;
+  }
+
+  final cache = ref.read(localTransactionsCacheProvider);
+  final cached = cache.load(user.uid);
+  if (cached != null) yield cached;
+
   final repo = ref.watch(transactionRepositoryProvider);
-  if (repo == null) return Stream.value(const []);
-  return repo.watchAll();
+  if (repo == null) return;
+
+  await for (final list in repo.watchAll()) {
+    await cache.save(user.uid, list);
+    yield list;
+  }
 });
 
 class TransactionRepository {

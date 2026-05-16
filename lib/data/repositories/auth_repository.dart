@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
@@ -39,7 +40,28 @@ class AuthRepository {
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email.trim());
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signInWithGoogle() async {
+    final account = await GoogleSignIn.instance.authenticate();
+    final idToken = account.authentication.idToken;
+    if (idToken == null) {
+      throw FirebaseAuthException(
+        code: 'no-id-token',
+        message: 'Google did not return an ID token. Check your Firebase '
+            'Android SHA-1 setup.',
+      );
+    }
+    final credential = GoogleAuthProvider.credential(idToken: idToken);
+    await _auth.signInWithCredential(credential);
+  }
+
+  Future<void> signOut() async {
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {
+      // Not signed in via Google — ignore.
+    }
+    await _auth.signOut();
+  }
 }
 
 String authErrorMessage(Object e) {
@@ -55,13 +77,23 @@ String authErrorMessage(Object e) {
         return 'Email or password is incorrect.';
       case 'email-already-in-use':
         return 'An account already exists with that email.';
+      case 'account-exists-with-different-credential':
+        return 'An account with this email exists with another sign-in method.';
       case 'weak-password':
         return 'Password is too weak. Use at least 6 characters.';
       case 'network-request-failed':
         return 'Network error. Check your internet connection.';
+      case 'no-id-token':
+        return e.message ?? 'Google sign-in failed.';
       default:
         return e.message ?? 'Authentication failed.';
     }
+  }
+  if (e is GoogleSignInException) {
+    return switch (e.code) {
+      GoogleSignInExceptionCode.canceled => 'Sign-in cancelled.',
+      _ => 'Google sign-in failed: ${e.description ?? e.code.name}',
+    };
   }
   return 'Something went wrong. Please try again.';
 }

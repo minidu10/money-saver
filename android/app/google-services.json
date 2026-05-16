@@ -12,7 +12,20 @@
           "package_name": "com.minidu.moneysaver.money_saver"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "752507260398-dkm8hm8qoavqrssq512vf86gqettroe8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.minidu.moneysaver.money_saver",
+            "certificate_hash": "4927953af0b48f9cf24d9c2110f6cb27929f1e8a"
+          }
+        },
+        {
+          "client_id": "752507260398-pkhp9hnv6tgbf17b2sribf06o4j3s7ii.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBjn62ia74RrCqGD7sdGtx2CrsWwJ40IIw"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "752507260398-pkhp9hnv6tgbf17b2sribf06o4j3s7ii.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "752507260398-65vuamfsmhrci9rggt5boofoltubthu3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.minidu.moneysaver.moneySaver"
+              }
+            }
+          ]
         }
       }
     }

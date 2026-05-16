@@ -43,6 +43,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _googleSignIn() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _forgotPassword() async {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty) {
@@ -154,6 +168,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           : const Text('Log in'),
                     ),
                     const SizedBox(height: 16),
+                    const _OrDivider(),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _googleSignIn,
+                      icon: const Icon(Icons.g_mobiledata, size: 28),
+                      label: const Text('Continue with Google'),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -171,6 +193,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'or',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }
